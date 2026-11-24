@@ -56,6 +56,8 @@ class StreamIT {
     dev.nezz.rentguard.api.LedgerController ledger;
     @Autowired
     dev.nezz.rentguard.ledger.LedgerKeys keys;
+    @Autowired
+    dev.nezz.rentguard.ai.InspectorTools tools;
 
     @BeforeEach
     void cleanTables() {
@@ -256,5 +258,44 @@ class StreamIT {
             assertThat(p.listings()).isEqualTo(5);
             assertThat(p.unregisteredShortTerm()).isEqualTo(3);
         });
+    }
+
+    @Test
+    void theAssistantToolsAnswerFromTheDatabase() {
+        String d1 = "2026-08-01", d2 = "2026-09-01";
+        publish(d1, listing(d1, 21, "2", null), listing(d1, 22, "2", null), listing(d1, 23, "40", null));
+        await(() -> "applied".equals(status(d1)));
+        publish(d2, listing(d2, 21, "2", null), listing(d2, 22, "2", "EXEMPT"), listing(d2, 23, "40", null));
+        await(() -> "applied".equals(status(d2)));
+
+        @SuppressWarnings("unchecked")
+        var counts = (Map<String, Object>) tools.call("compliance_counts", Map.of("borough", "manhattan"));
+        assertThat(counts).containsEntry("snapshot", d2).containsEntry("total_listings", 3L);
+        @SuppressWarnings("unchecked")
+        var byStatus = (List<Map<String, Object>>) counts.get("by_status");
+        assertThat(byStatus).hasSize(5); // every status, zeros included: "0 registered" is an answer too
+        assertThat(byStatus).filteredOn(r -> r.get("status").equals("registered"))
+                .singleElement().satisfies(r -> assertThat(((Number) r.get("listings")).longValue()).isZero());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> tools.call("compliance_counts",
+                Map.of("snapshot", "2020-01-01"))).hasMessageContaining("not known");
+
+        @SuppressWarnings("unchecked")
+        var hosts = (Map<String, Object>) tools.call("top_hosts", Map.of("limit", 1));
+        assertThat((List<?>) hosts.get("hosts")).singleElement()
+                .satisfies(h -> assertThat(((Number) ((Map<?, ?>) h).get("listings")).longValue()).isEqualTo(1));
+
+        @SuppressWarnings("unchecked")
+        var history = (Map<String, Object>) tools.call("listing_history", Map.of("listing_id", 22));
+        assertThat((List<?>) history.get("status_periods")).hasSize(2);
+
+        assertThat((List<?>) tools.call("status_trend", Map.of())).hasSize(2);
+        assertThat((List<?>) tools.call("snapshot_decisions", Map.of())).hasSize(2);
+        @SuppressWarnings("unchecked")
+        var rules = (List<Map<String, Object>>) tools.call("search_rules", Map.of("query", "how do hosts register?"));
+        assertThat(rules).extracting(r -> r.get("id")).contains("R2");
+        assertThat((List<?>) tools.call("search_rules", Map.of("query", "the and of"))).isEmpty();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> tools.call("drop_tables", Map.of()))
+                .hasMessageContaining("unknown tool");
+        assertThat(tools.definitions()).hasSize(6);
     }
 }
