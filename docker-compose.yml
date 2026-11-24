@@ -25,7 +25,7 @@ services:
     environment:
       POSTGRES_USER: stream
       POSTGRES_PASSWORD: stream
-      POSTGRES_DB: listingstream
+      POSTGRES_DB: rentguard
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U stream"]
       interval: 2s
@@ -40,7 +40,7 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP: kafka:9092
-      DATABASE_URL: jdbc:postgresql://postgres:5432/listingstream
+      DATABASE_URL: jdbc:postgresql://postgres:5432/rentguard
       DATABASE_USER: stream
       DATABASE_PASSWORD: stream
       DATA_DIR: /data

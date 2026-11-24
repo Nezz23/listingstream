@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>dev.nezz</groupId>
-	<artifactId>listingstream</artifactId>
+	<artifactId>rentguard</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>listingstream</name>
+	<name>rentguard</name>
 	<description>Streams NYC short-term rental snapshots through Kafka into a PostgreSQL change history, reconciled against the batch dbt warehouse</description>
 	<url/>
 	<licenses>
@@ -172,7 +172,7 @@
 						<configuration>
 							<dataFile>${project.build.directory}/jacoco-all.exec</dataFile>
 							<excludes>
-								<exclude>dev/nezz/listingstream/bench/**</exclude>
+								<exclude>dev/nezz/rentguard/bench/**</exclude>
 							</excludes>
 						</configuration>
 					</execution>
