@@ -1,0 +1,85 @@
+{
+  "source": "AirbnbWarehouse dbt build (DuckDB), silver.stg_listings and silver.listings_scd2",
+  "scd2": {
+    "versions": 56657,
+    "listings": 41760
+  },
+  "scd2_current": 29873,
+  "accepted_snapshots": [
+    "2026-03-16",
+    "2026-04-14",
+    "2026-05-14",
+    "2026-06-14",
+    "2026-07-12",
+    "2026-08-10",
+    "2026-09-14",
+    "2026-10-04",
+    "2026-11-01"
+  ],
+  "quarantined_snapshots": [
+    "2026-06-08"
+  ],
+  "ll18_counts": {
+    "2026-03-16": {
+      "exempt": 2723,
+      "long_term_30_plus": 30371,
+      "registered": 2302,
+      "unknown": 1,
+      "unregistered_short_term": 582
+    },
+    "2026-04-14": {
+      "exempt": 2757,
+      "long_term_30_plus": 29376,
+      "registered": 2305,
+      "unknown": 3,
+      "unregistered_short_term": 595
+    },
+    "2026-05-14": {
+      "exempt": 2843,
+      "long_term_30_plus": 23342,
+      "registered": 2333,
+      "unknown": 1,
+      "unregistered_short_term": 475
+    },
+    "2026-06-14": {
+      "exempt": 2956,
+      "long_term_30_plus": 24605,
+      "registered": 2330,
+      "unknown": 1,
+      "unregistered_short_term": 367
+    },
+    "2026-07-12": {
+      "exempt": 2934,
+      "long_term_30_plus": 24475,
+      "registered": 2310,
+      "unknown": 2,
+      "unregistered_short_term": 375
+    },
+    "2026-08-10": {
+      "exempt": 2935,
+      "long_term_30_plus": 24298,
+      "registered": 2284,
+      "unknown": 2,
+      "unregistered_short_term": 715
+    },
+    "2026-09-14": {
+      "exempt": 2877,
+      "long_term_30_plus": 24028,
+      "registered": 2250,
+      "unknown": 6,
+      "unregistered_short_term": 757
+    },
+    "2026-10-04": {
+      "exempt": 2736,
+      "long_term_30_plus": 23804,
+      "registered": 2258,
+      "unregistered_short_term": 779
+    },
+    "2026-11-01": {
+      "exempt": 2784,
+      "long_term_30_plus": 24012,
+      "registered": 2283,
+      "unregistered_short_term": 794
+    }
+  }
+}
