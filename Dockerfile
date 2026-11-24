@@ -8,7 +8,7 @@ RUN mvn -B -q package -DskipTests
 
 # Run stage: JRE only, non-root user
 FROM eclipse-temurin:21-jre
-RUN useradd --system --uid 1001 stream
+RUN useradd --system --uid 1001 stream && mkdir /keys && chown stream /keys  # ledger signing key volume
 WORKDIR /app
 COPY --from=build /src/target/rentguard-*.jar app.jar
 USER stream

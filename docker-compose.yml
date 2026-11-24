@@ -1,4 +1,5 @@
-# Kafka (KRaft, no ZooKeeper), PostgreSQL and the stream service.
+# Kafka (KRaft, no ZooKeeper), PostgreSQL and RentGuard. The AI assistant uses Ollama on the host
+# (ollama pull qwen2.5:7b); everything else works without it.
 #   docker compose up --build
 #   curl -X POST localhost:8080/api/replay           # streams ./data/listings_*.jsonl.gz
 #   curl localhost:8080/api/reconciliation            # compare with the batch warehouse
@@ -44,6 +45,13 @@ services:
       DATABASE_USER: stream
       DATABASE_PASSWORD: stream
       DATA_DIR: /data
+      LEDGER_KEY_DIR: /keys
+      OLLAMA_URL: http://host.docker.internal:11434
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - ./data:/data:ro
+      - ledger-keys:/keys
     ports: ["8080:8080"]
+
+volumes:
+  ledger-keys:
