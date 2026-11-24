@@ -19,7 +19,7 @@ per-snapshot compliance count ([report](docs/reconciliation.md)).
 | Reconciliation with the batch warehouse | **14 / 14 checks identical** |
 | Partial scrape (4,506 rows after 28,994) | **Quarantined** by the same volume rule as the batch pipeline |
 | Full dataset replayed a second time | **284,472 duplicates skipped, 0 rows changed** |
-| Tests | **18** (13 unit, 5 integration on embedded Kafka + PostgreSQL), 89% line coverage locally |
+| Tests | **19** (13 unit, 6 integration on embedded Kafka + PostgreSQL), 89% line coverage |
 
 Unregistered short-term listings in the stream's output: 367 in June 2026, 794 by November (+116%).
 
@@ -93,10 +93,13 @@ curl localhost:8080/api/reconciliation
   quarantined with the exact reason; dead-lettered events reaching both the DLT topic and the table while the
   snapshot still completes; the same snapshot delivered three times producing one result; API paging, filtering
   and errors.
+- **Replay (1 integration test):** the producer on a committed sample (the first 50 real listings of two scrapes):
+  every event published, staged and both snapshots decided.
 - **Full reconciliation (1 integration test):** all 284,472 real events through the embedded broker, every check
   against the batch warehouse. Needs the exported scrape files (14 MB, not committed), so CI skips it.
 
-GitHub Actions runs the suite against a PostgreSQL 17 service container, publishes coverage, validates the compose
+GitHub Actions runs the suite against a PostgreSQL 17 service container (88.9% line coverage without the full
+dataset), publishes the coverage report, validates the compose
 file and builds the image.
 
 ## Tech
