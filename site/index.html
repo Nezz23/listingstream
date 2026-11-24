@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RentGuard</title>
+<meta name="description" content="Real-time compliance monitoring for NYC short-term rentals: Kafka stream, signed audit ledger you can verify in your browser, and a grounded AI assistant.">
+<style>
+:root {
+  --bg: #f7f7f4; --panel: #ffffff; --ink: #1d2125; --muted: #5d6670; --line: #e2e4e0;
+  --accent: #c2410c; --accent-soft: #fff1e8; --ok: #15803d; --ok-soft: #e8f6ec; --bad: #b91c1c; --bad-soft: #fdecec;
+  --bar: #c2410c; --bar-muted: #d6d3cd; --code: #f1f1ee;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141618; --panel: #1c1f22; --ink: #e8e9e6; --muted: #9aa3ab; --line: #2e3236;
+    --accent: #fb923c; --accent-soft: #2a1d14; --ok: #4ade80; --ok-soft: #14261b; --bad: #f87171; --bad-soft: #2c1717;
+    --bar: #fb923c; --bar-muted: #3a3f44; --code: #24282c;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1040px; margin: 0 auto; padding: 0 16px 64px; }
+header { padding: 48px 0 24px; }
+h1 { font-size: clamp(2rem, 5vw, 2.8rem); margin: 0 0 8px; letter-spacing: -0.02em; }
+h1 span { color: var(--accent); }
+h2 { font-size: 1.45rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; margin: 0 0 8px; }
+p { margin: 0 0 12px; }
+.lead { font-size: 1.12rem; color: var(--muted); max-width: 760px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.tag { font-size: 0.8rem; padding: 3px 9px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); background: var(--panel); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 24px 0 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.stat b { display: block; font-size: 1.7rem; letter-spacing: -0.02em; }
+.stat span { color: var(--muted); font-size: 0.9rem; }
+section { margin-top: 44px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.sub { color: var(--muted); margin-bottom: 16px; max-width: 780px; }
+.grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-size: 11px; }
+.chain { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+.block { flex: 0 0 auto; min-width: 118px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; background: var(--panel); font-size: 0.8rem; }
+.block b { display: block; font-size: 0.86rem; }
+.block.q { border-style: dashed; }
+.block code { color: var(--muted); }
+code, .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.82rem; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+select, button { font: inherit; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); cursor: pointer; }
+button { cursor: pointer; }
+.steps { list-style: none; padding: 0; margin: 12px 0 0; }
+.steps li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); }
+.steps .ic { font-weight: 700; }
+.steps .ok { color: var(--ok); } .steps .bad { color: var(--bad); } .steps .wait { color: var(--muted); }
+.steps small { display: block; color: var(--muted); word-break: break-all; }
+.banner { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-weight: 600; }
+.banner.ok { background: var(--ok-soft); color: var(--ok); } .banner.bad { background: var(--bad-soft); color: var(--bad); }
+.entry { background: var(--code); border-radius: 8px; padding: 10px 12px; margin-top: 8px; word-break: break-all; }
+.qa { display: grid; gap: 10px; }
+.q { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--panel); }
+.q .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 0.78rem; color: var(--muted); }
+.q .meta span { background: var(--code); padding: 2px 7px; border-radius: 6px; }
+.q .question { font-weight: 600; }
+.q .answer { margin-top: 6px; white-space: pre-line; }
+.pill { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.warn { background: var(--accent-soft); color: var(--accent); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.note { font-size: 0.85rem; color: var(--muted); margin-top: 10px; }
+footer { margin-top: 56px; color: var(--muted); font-size: 0.88rem; border-top: 1px solid var(--line); padding-top: 18px; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Rent<span>Guard</span></h1>
+  <p class="lead">Real-time compliance monitoring for New York City short-term rentals. Every listing streams through Kafka,
+    every decision is written to a signed, hash-chained audit ledger you can verify right here, and an AI assistant answers
+    inspectors' questions without being allowed to invent a number.</p>
+  <div class="tags">
+    <span class="tag">Java 21</span><span class="tag">Spring Boot</span><span class="tag">Apache Kafka</span>
+    <span class="tag">PostgreSQL</span><span class="tag">SHA-256 · Merkle · ECDSA</span><span class="tag">Ollama · Qwen2.5 7B</span>
+    <span class="tag">Tool calling · RAG</span><span class="tag">JUnit · GitHub Actions</span>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<section>
+  <h2>What the stream found</h2>
+  <p class="sub">NYC's Local Law 18 requires short-term rentals (under 30 nights) to be registered. Each bar is one public
+    scrape of every NYC Airbnb listing. The dashed bar was a partial scrape that RentGuard quarantined instead of counting.</p>
+  <div class="grid2">
+    <div class="panel chart"><h3>Unregistered short-term listings per scrape</h3><div id="trend"></div></div>
+    <div class="panel"><h3>By borough, November 1, 2026</h3><table id="boroughs"></table></div>
+  </div>
+</section>
+
+<section>
+  <h2>The audit ledger: check it yourself</h2>
+  <p class="sub">Each snapshot decision is one block: the decision plus every listing whose status changed, hashed into a
+    Merkle root, chained to the previous block and signed with ECDSA P-256. Pick a listing and your browser re-checks its
+    receipt with nothing but the public key. Then try editing the record.</p>
+  <div class="panel" style="margin-bottom:12px"><div class="chain" id="chain"></div></div>
+  <div class="panel">
+    <div class="row">
+      <label for="listing">Listing</label>
+      <select id="listing"></select>
+      <label for="receipt">Record</label>
+      <select id="receipt"></select>
+    </div>
+    <div class="row">
+      <label for="tamper">Recorded new status</label>
+      <select id="tamper"></select>
+      <button class="primary" id="run">Verify in my browser</button>
+    </div>
+    <div class="entry mono" id="canonical"></div>
+    <ul class="steps" id="steps"></ul>
+    <div id="verdict"></div>
+    <p class="note">Runs entirely in this page with the Web Crypto API: SHA-256 for the entry, the Merkle path and the block
+      header, then an ECDSA signature check against the service's public key. Nothing is sent anywhere.</p>
+  </div>
+</section>
+
+<section>
+  <h2>The AI assistant, and the guard that checks it</h2>
+  <p class="sub" id="aisub"></p>
+  <div class="filters" id="filters"></div>
+  <div class="qa" id="qa"></div>
+  <p class="note">Recorded from a local run (Ollama, temperature 0). Expected answers were computed separately with SQL. The
+    assistant itself runs on your machine: <code>POST /api/ask</code>.</p>
+</section>
+
+<footer>
+  Code, tests and documentation: <a href="https://github.com/Nezz23/rentguard">github.com/Nezz23/rentguard</a> ·
+  Built by Neha Kothavade · Data: <a href="https://insideairbnb.com/get-the-data/">Inside Airbnb</a>, March to November 2026.
+  Rule summaries are not legal advice; an unregistered flag is a screening signal, not proof of an illegal stay.
+</footer>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Number(n).toLocaleString("en-US");
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const enc = new TextEncoder();
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+const unhex = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)));
+const sha = async (bytes) => hex(await crypto.subtle.digest("SHA-256", bytes));
+const field = (v) => (v === null || v === undefined ? "-" : String(v).replaceAll("|", "/"));
+const STATUS = { unregistered_short_term: "Unregistered short-term", registered: "Registered", exempt: "Exempt", long_term_30_plus: "Long-term (30+ nights)", unknown: "Unknown" };
+
+let D;
+
+async function load() {
+  D = await (await fetch("data.json")).json();
+  stats(); trend(); boroughs(); chain(); ledgerUi(); assistant();
+}
+
+function stats() {
+  const v = D.verify, e = D.eval;
+  const tiles = [
+    ["284,472", "listing events streamed through Kafka"],
+    ["14 / 14", "checks identical to the batch dbt warehouse"],
+    [fmt(v.entries), `decisions in ${v.blocks} signed ledger blocks`],
+    [`${e.correct} / ${e.cases}`, `AI answers correct, ${e.releasedButWrong} wrong ones released`],
+  ];
+  $("stats").innerHTML = tiles.map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+}
+
+function trend() {
+  const points = D.snapshots.map((s) => {
+    const t = D.trend.find((x) => x.snapshot === s.snapshot_date);
+    return { date: s.snapshot_date, value: t ? t.unregisteredShortTerm : null, quarantined: s.status === "quarantined" };
+  });
+  const W = 560, H = 250, L = 40, B = 34, T = 14;
+  const max = Math.ceil(Math.max(...points.map((p) => p.value || 0)) / 200) * 200;
+  const step = (W - L - 8) / points.length, bw = step * 0.62;
+  const y = (v) => T + (H - T - B) * (1 - v / max);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Unregistered short-term listings per scrape">`;
+  for (let g = 0; g <= max; g += 200) svg += `<line x1="${L}" x2="${W - 4}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(g) + 4}" text-anchor="end">${g}</text>`;
+  points.forEach((p, i) => {
+    const x = L + i * step + (step - bw) / 2;
+    const label = new Date(p.date + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    if (p.quarantined) {
+      svg += `<rect x="${x}" y="${y(max * 0.18)}" width="${bw}" height="${H - B - y(max * 0.18)}" fill="none" stroke="var(--muted)" stroke-dasharray="4 3"><title>${p.date}: quarantined (partial scrape)</title></rect>`;
+      svg += `<text x="${x + bw / 2}" y="${y(max * 0.18) - 5}" text-anchor="middle">held</text>`;
+    } else {
+      svg += `<rect x="${x}" y="${y(p.value)}" width="${bw}" height="${H - B - y(p.value)}" rx="3" fill="var(--bar)"><title>${p.date}: ${fmt(p.value)} unregistered</title></rect>`;
+      svg += `<text x="${x + bw / 2}" y="${y(p.value) - 5}" text-anchor="middle">${p.value}</text>`;
+    }
+    svg += `<text x="${x + bw / 2}" y="${H - 14}" text-anchor="middle">${label}</text>`;
+  });
+  $("trend").innerHTML = svg + "</svg>";
+}
+
+function boroughs() {
+  const cols = ["unregistered_short_term", "registered", "exempt", "long_term_30_plus"];
+  let h = `<tr><th>Borough</th><th class="num">Unreg.</th><th class="num">Reg.</th><th class="num">Exempt</th><th class="num">Long-term</th></tr>`;
+  for (const [b, c] of Object.entries(D.boroughs)) h += `<tr><td>${b}</td>${cols.map((k) => `<td class="num">${fmt(c[k] || 0)}</td>`).join("")}</tr>`;
+  $("boroughs").innerHTML = h;
+}
+
+function chain() {
+  $("chain").innerHTML = D.blocks.map((b) => {
+    const q = b.decision.startsWith("quarantined");
+    return `<div class="block${q ? " q" : ""}"><b>#${b.height} · ${b.snapshot_date}</b>${q ? "quarantined" : fmt(b.entry_count) + " entries"}<br><code>${b.block_hash.slice(0, 12)}…</code></div>`;
+  }).join("");
+}
+
+function ledgerUi() {
+  $("listing").innerHTML = D.receipts.map((r, i) => `<option value="${i}">${esc(r.label)} (${r.listingId})</option>`).join("");
+  $("tamper").innerHTML = ['(as recorded)', ...Object.keys(STATUS), "(delisted)"].map((s) => `<option value="${s}">${STATUS[s] || s}</option>`).join("");
+  $("listing").onchange = receipts;
+  $("receipt").onchange = show;
+  $("tamper").onchange = show;
+  $("run").onclick = verify;
+  receipts();
+}
+
+function receipts() {
+  const r = D.receipts[$("listing").value];
+  $("receipt").innerHTML = r.receipts.map((x, i) => `<option value="${i}">${x.snapshotDate}: ${STATUS[x.entry.oldStatus] || "first seen"} → ${STATUS[x.entry.newStatus] || "delisted"}</option>`).join("");
+  $("tamper").value = "(as recorded)";
+  show();
+}
+
+function current() {
+  const rec = D.receipts[$("listing").value].receipts[$("receipt").value];
+  const t = $("tamper").value;
+  const entry = { ...rec.entry };
+  if (t !== "(as recorded)") entry.newStatus = t === "(delisted)" ? null : t;
+  const canonical = [rec.snapshotDate, entry.kind, field(entry.listingId), field(entry.oldStatus), field(entry.newStatus), field(entry.detail)].join("|");
+  return { rec, entry, canonical, tampered: canonical !== rec.canonical };
+}
+
+function show() {
+  const { canonical, tampered } = current();
+  $("canonical").innerHTML = `Entry as stored${tampered ? " <b style='color:var(--bad)'>(edited)</b>" : ""}: ${esc(canonical)}`;
+  $("steps").innerHTML = ""; $("verdict").innerHTML = "";
+}
+
+async function verify() {
+  const { rec, canonical } = current();
+  const steps = [];
+  const put = () => { $("steps").innerHTML = steps.map((s) => `<li><span class="ic ${s.ok ? "ok" : "bad"}">${s.ok ? "✓" : "✗"}</span><div>${s.title}<small>${s.detail}</small></div></li>`).join(""); };
+  const entryHash = await sha(enc.encode(canonical));
+  steps.push({ ok: entryHash === rec.entryHash, title: "Entry hash", detail: `SHA-256 of the entry = ${entryHash}${entryHash === rec.entryHash ? "" : " (the receipt says " + rec.entryHash + ")"}` });
+  let node = entryHash;
+  for (const s of rec.proof) {
+    const a = s.siblingOnLeft ? unhex(s.siblingHash) : unhex(node), b = s.siblingOnLeft ? unhex(node) : unhex(s.siblingHash);
+    const both = new Uint8Array(64); both.set(a, 0); both.set(b, 32);
+    node = await sha(both);
+  }
+  const rootOk = node === rec.header.merkleRoot;
+  steps.push({ ok: rootOk, title: `Merkle path (${rec.proof.length} hashes for ${fmt(rec.header.entryCount)} entries)`, detail: `computed root ${node}` + (rootOk ? " matches the block header" : `, header says ${rec.header.merkleRoot}`) });
+  const h = rec.header;
+  const headerHash = await sha(enc.encode([h.height, h.snapshotDate, h.prevHash, h.merkleRoot, h.entryCount, h.createdMs].join("|")));
+  steps.push({ ok: headerHash === rec.blockHash, title: `Block #${h.height} header hash`, detail: headerHash });
+  const key = await crypto.subtle.importKey("spki", Uint8Array.from(atob(D.publicKey), (c) => c.charCodeAt(0)), { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+  const sigOk = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, Uint8Array.from(atob(rec.signature), (c) => c.charCodeAt(0)), enc.encode(rec.blockHash));
+  steps.push({ ok: sigOk, title: "ECDSA P-256 signature on the block", detail: sigOk ? "valid for RentGuard's public key" : "not valid" });
+  const linked = D.blocks.find((b) => b.height === h.height + 1);
+  steps.push({ ok: !linked || linked.prev_hash === rec.blockHash, title: "Chained into the ledger", detail: linked ? `block #${linked.height} points back to this block's hash` : "this is the latest block (the tip)" });
+  put();
+  const all = steps.every((s) => s.ok);
+  $("verdict").innerHTML = all
+    ? `<div class="banner ok">Verified: this record is exactly what RentGuard signed on ${h.snapshotDate}.</div>`
+    : `<div class="banner bad">Rejected: the edited record no longer matches the signed block. Tampering detected.</div>`;
+}
+
+function assistant() {
+  const e = D.eval;
+  $("aisub").innerHTML = `Inspectors ask in plain English. The model (${esc(e.model)}, running locally) can only call six read-only database tools and a rule search. An answer is shown only if every number appears in the tool results and every [R#] citation was actually retrieved; otherwise it is sent back once, then declined. On ${e.cases} SQL-checked questions: <b>${e.correct} correct</b>, <b>${e.releasedButWrong} wrong answers released</b>, ${e.draftsCorrectedByGuard} first drafts caught and corrected, ${(e.avgMillis / 1000).toFixed(1)} s on average.`;
+  const cats = ["all", ...new Set(D.qa.map((q) => q.category))];
+  const names = { all: "All", count: "Counts", trend: "Trends", hosts: "Hosts", history: "Listing history", pipeline: "Pipeline", rules: "Rules", decline: "Refusals" };
+  $("filters").innerHTML = cats.map((c) => `<button data-c="${c}" aria-pressed="${c === "all"}">${names[c] || c}</button>`).join("");
+  $("filters").onclick = (ev) => {
+    const c = ev.target.dataset.c; if (!c) return;
+    [...$("filters").children].forEach((b) => b.setAttribute("aria-pressed", b.dataset.c === c));
+    render(c);
+  };
+  const render = (c) => {
+    $("qa").innerHTML = D.qa.filter((q) => c === "all" || q.category === c).map((q) => `
+      <div class="q"><div class="question">${esc(q.question)}</div><div class="answer">${esc(q.answer)}</div>
+      <div class="meta"><span class="pill ${q.correct ? "ok" : "warn"}">${q.correct ? "correct" : "incorrect"}</span>
+      ${q.corrections ? '<span class="pill warn">guard corrected a draft</span>' : ""}
+      <span>tools: ${q.tools.length ? q.tools.map(esc).join(", ") : "none"}</span><span>${(q.millis / 1000).toFixed(1)} s</span>
+      <span>expected: ${esc(q.expected)}</span></div></div>`).join("");
+  };
+  render("all");
+}
+
+load();
+</script>
+</body>
+</html>

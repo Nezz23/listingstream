@@ -8,6 +8,9 @@ every listing from 10 Inside Airbnb scrapes of New York City (284,472 events) th
 break the rule, records every decision in a signed, hash-chained ledger, and answers inspectors' questions in plain
 English using only verified data.
 
+**Live demo: [nezz23.github.io/rentguard](https://nezz23.github.io/rentguard/)**: verify real ledger receipts in your
+browser (then edit one and watch it fail), and read every recorded assistant answer with its tool trail.
+
 | | |
 |---|---|
 | **Stream** | 284,472 events in about 3 s on one laptop (~95,000 events/s), and the result matches the batch dbt warehouse on **14 of 14** checks ([reconciliation](docs/reconciliation.md)) |
